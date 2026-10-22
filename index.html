@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blutkreislauf – Learning Nuggets</title>
+<style>
+  :root {
+    --red: #c62839; --red-d: #9b1c2b; --blue: #2f6db5; --bg: #fff7f5; --card: #fff;
+    --ink: #2b2230; --muted: #6d6275; --ok: #1f8a4c; --okbg: #e3f6ea; --bad: #c62839; --badbg: #fde8ea;
+    --line: #ead9d6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 17px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  header { background: var(--red); color: #fff; padding: 14px 16px 0; }
+  header h1 { margin: 0 0 10px; font-size: 1.3rem; }
+  nav { display: flex; gap: 4px; overflow-x: auto; }
+  nav button { flex: none; border: 0; background: rgba(255,255,255,.18); color: #fff; padding: 9px 13px; border-radius: 10px 10px 0 0; font: inherit; font-size: .95rem; cursor: pointer; }
+  nav button.active { background: var(--bg); color: var(--red-d); font-weight: 700; }
+  nav button.done::after { content: " ✓"; }
+  main { max-width: 780px; margin: 0 auto; padding: 18px 16px 60px; }
+  section { display: none; }
+  section.active { display: block; }
+  h2 { margin-top: 0; color: var(--red-d); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 14px 0; }
+  .task { background: #fff1d6; border-left: 5px solid #f0a81c; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; }
+  button.btn { background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+  button.btn:hover { background: var(--red-d); }
+  button.btn.sec { background: #fff; color: var(--red-d); border: 2px solid var(--red); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .fb { margin-top: 12px; padding: 10px 14px; border-radius: 10px; font-weight: 600; display: none; }
+  .fb.show { display: block; }
+  .fb.ok { background: var(--okbg); color: var(--ok); }
+  .fb.bad { background: var(--badbg); color: var(--bad); }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .facts .card { margin: 0; }
+  .facts h3 { margin: 0 0 4px; font-size: 1rem; color: var(--red-d); }
+  .facts p { margin: 0; font-size: .95rem; }
+  /* Zuordnen */
+  .match { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+  .chip { border: 2px solid var(--line); background: #fff; border-radius: 10px; padding: 10px 12px; font: inherit; text-align: left; cursor: pointer; }
+  .chip:hover { border-color: var(--red); }
+  .chip.sel { border-color: var(--blue); background: #e8f1fc; }
+  .chip.ok { border-color: var(--ok); background: var(--okbg); cursor: default; }
+  .chip.shake { animation: shake .35s; border-color: var(--bad); }
+  @keyframes shake { 25% { transform: translateX(-6px);} 75% { transform: translateX(6px);} }
+  /* Lücken */
+  select { font: inherit; padding: 3px 6px; border-radius: 8px; border: 2px solid var(--line); background: #fff; }
+  select.ok { border-color: var(--ok); background: var(--okbg); }
+  select.bad { border-color: var(--bad); background: var(--badbg); }
+  .gap p { margin: 0 0 12px; line-height: 2.1; }
+  /* Reihenfolge */
+  .slots { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .slot { border: 2px dashed var(--line); border-radius: 10px; padding: 8px 12px; min-height: 42px; color: var(--muted); }
+  .slot.filled { border: 2px solid var(--ok); background: var(--okbg); color: var(--ink); font-weight: 600; }
+  .pool { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* Herz */
+  .heartwrap { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 16px; align-items: center; }
+  @media (max-width: 560px) { .heartwrap, .match { grid-template-columns: 1fr; } }
+  .labels div { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: #2b2230; color: #fff; display: grid; place-items: center; font-weight: 700; }
+  /* Mythen / Test */
+  .bigq { font-size: 1.15rem; font-weight: 600; margin-bottom: 12px; }
+  .answers { display: grid; gap: 8px; }
+  .progress { height: 8px; background: var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+  .progress i { display: block; height: 100%; background: var(--red); width: 0; transition: width .3s; }
+  input[type=text] { font: inherit; padding: 9px 12px; border: 2px solid var(--line); border-radius: 10px; width: 100%; max-width: 320px; }
+  .score { font-size: 2rem; font-weight: 800; color: var(--red-d); }
+  .small { font-size: .85rem; color: var(--muted); }
+  .review li { margin-bottom: 6px; }
+  .review .r { color: var(--ok); } .review .w { color: var(--bad); }
+  footer { text-align: center; color: var(--muted); font-size: .8rem; padding: 20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>❤️ Der Blutkreislauf</h1>
+  <nav id="nav"></nav>
+</header>
+<main>
+
+<!-- LERNEN -->
+<section id="s-lernen">
+  <h2>Los geht's: Dein Blut ist ständig unterwegs!</h2>
+  <p>Dein Herz schlägt in Ruhe etwa <b>60–80 Mal pro Minute</b> und pumpt Blut durch einen Rundweg von rund <b>100 000 km Blutgefässen</b>. Lies die Karten kurz durch – danach kannst du dein Wissen in 5 Übungen testen.</p>
+  <div class="facts">
+    <div class="card"><h3>🫀 Das Herz</h3><p>Ein starker Muskel mit 4 Räumen: 2 Vorhöfe und 2 Herzkammern. Die rechte Seite pumpt zur Lunge, die linke in den Körper.</p></div>
+    <div class="card"><h3>🔴 Arterien</h3><p>Führen Blut <b>vom Herz weg</b>. Merke: <b>A</b>rterie = <b>A</b>bwärts vom Herz.</p></div>
+    <div class="card"><h3>🔵 Venen</h3><p>Führen Blut <b>zum Herz hin</b>. Klappen verhindern, dass das Blut zurückfliesst.</p></div>
+    <div class="card"><h3>🕸️ Kapillaren</h3><p>Hauchdünne Gefässe in den Organen. Hier gibt das Blut Sauerstoff ab und nimmt CO₂ auf.</p></div>
+    <div class="card"><h3>🫁 Lungenkreislauf</h3><p>Rechtes Herz → Lunge → linkes Herz. Das Blut holt Sauerstoff und gibt CO₂ ab.</p></div>
+    <div class="card"><h3>💪 Körperkreislauf</h3><p>Linkes Herz → Körper → rechtes Herz. Alle Organe werden mit Sauerstoff versorgt.</p></div>
+  </div>
+  <div class="row"><button class="btn" data-go="u1">Zu Übung 1 →</button></div>
+</section>
+
+<!-- ÜBUNG 1 -->
+<section id="s-u1">
+  <h2>Übung 1: Blutbestandteile</h2>
+  <div class="task">Tippe links einen Bestandteil an und danach rechts die passende Aufgabe.</div>
+  <div class="card"><div class="match" id="m-grid"></div></div>
+  <div class="fb" id="m-fb"></div>
+  <div class="row"><button class="btn sec" id="m-reset">Neu starten</button><button class="btn" data-go="u2">Weiter →</button></div>
+</section>
+
+<!-- ÜBUNG 2 -->
+<section id="s-u2">
+  <h2>Übung 2: Lückentext</h2>
+  <div class="task">Wähle in jeder Lücke das richtige Wort aus.</div>
+  <div class="card gap" id="g-text"></div>
+  <div class="fb" id="g-fb"></div>
+  <div class="row"><button class="btn" id="g-check">Prüfen</button><button class="btn sec" id="g-reset">Neu starten</button><button class="btn" data-go="u3">Weiter →</button></div>
+</section>
+
+<!-- ÜBUNG 3 -->
+<section id="s-u3">
+  <h2>Übung 3: Der Weg des Blutes</h2>
+  <div class="task">Das Blut startet im <b>Körper</b>. Tippe die Stationen in der richtigen Reihenfolge an: Wohin fliesst es als Nächstes?</div>
+  <div class="card">
+    <div class="slots" id="o-slots"></div>
+    <div class="pool" id="o-pool"></div>
+  </div>
+  <div class="fb" id="o-fb"></div>
+  <div class="row"><button class="btn sec" id="o-reset">Neu starten</button><button class="btn" data-go="u4">Weiter →</button></div>
+</section>
+
+<!-- ÜBUNG 4 -->
+<section id="s-u4">
+  <h2>Übung 4: Das Herz beschriften</h2>
+  <div class="task">Du schaust das Herz von vorne an – deine <b>linke</b> Hand zeigt also auf die <b>rechte</b> Herzseite! Ordne jeder Zahl den richtigen Namen zu. (Blau = sauerstoffarm, rot = sauerstoffreich)</div>
+  <div class="card heartwrap">
+    <svg viewBox="0 0 300 300" role="img" aria-label="Schema des Herzens mit vier Räumen">
+      <path d="M150 280 C 40 200, 10 130, 30 80 C 50 30, 120 30, 150 80 C 180 30, 250 30, 270 80 C 290 130, 260 200, 150 280 Z" fill="#fff" stroke="#2b2230" stroke-width="4"/>
+      <path d="M150 80 L150 270 M20 150 L280 150" stroke="#2b2230" stroke-width="4" fill="none"/>
+      <!-- Betrachter links = rechtes Herz (blau) -->
+      <path d="M150 80 C120 30 50 30 30 80 C22 100 20 120 20 150 L150 150 Z" fill="#9dc0ea" opacity=".9"/>
+      <path d="M20 150 C22 190 60 230 150 278 L150 150 Z" fill="#6f9fd8" opacity=".9"/>
+      <path d="M150 80 C180 30 250 30 270 80 C278 100 280 120 280 150 L150 150 Z" fill="#f2a0a8" opacity=".9"/>
+      <path d="M280 150 C278 190 240 230 150 278 L150 150 Z" fill="#e0606e" opacity=".9"/>
+      <path d="M150 80 L150 270 M20 150 L280 150" stroke="#2b2230" stroke-width="4" fill="none"/>
+      <g font-weight="700" font-size="20" text-anchor="middle" fill="#fff">
+        <circle cx="85" cy="105" r="17" fill="#2b2230"/><text x="85" y="112">1</text>
+        <circle cx="85" cy="205" r="17" fill="#2b2230"/><text x="85" y="212">2</text>
+        <circle cx="215" cy="105" r="17" fill="#2b2230"/><text x="215" y="112">3</text>
+        <circle cx="215" cy="205" r="17" fill="#2b2230"/><text x="215" y="212">4</text>
+      </g>
+    </svg>
+    <div class="labels" id="h-labels"></div>
+  </div>
+  <div class="fb" id="h-fb"></div>
+  <div class="row"><button class="btn" id="h-check">Prüfen</button><button class="btn sec" id="h-reset">Neu starten</button><button class="btn" data-go="u5">Weiter →</button></div>
+</section>
+
+<!-- ÜBUNG 5 -->
+<section id="s-u5">
+  <h2>Übung 5: Stimmt's oder stimmt's nicht?</h2>
+  <div class="task">Entlarve die Mythen rund um Herz und Blut.</div>
+  <div class="card" id="t-card"></div>
+  <div class="row"><button class="btn sec" id="t-reset">Neu starten</button><button class="btn" data-go="test">Zum Test →</button></div>
+</section>
+
+<!-- TEST -->
+<section id="s-test">
+  <h2>Abschlusstest</h2>
+  <div class="card" id="q-card"></div>
+  <p class="small">Dein Testergebnis wird nur in deinem Browser gespeichert (nichts wird an einen Server geschickt). Du kannst es als Textdatei herunterladen.</p>
+</section>
+
+</main>
+<footer>Learning-Nugget-Demo · PHSG · Gemeinsam mit Claude Code gebaut</footer>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('blut_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('blut_' + k, JSON.stringify(v)); } catch (e) {} }
+};
+function fb(id, ok, msg) { const f = $(id); f.className = 'fb show ' + (ok ? 'ok' : 'bad'); f.textContent = msg; }
+
+/* ---------- Navigation ---------- */
+const TABS = [['lernen', 'Lernen'], ['u1', '1 Zuordnen'], ['u2', '2 Lücken'], ['u3', '3 Reihenfolge'], ['u4', '4 Herz'], ['u5', '5 Mythen'], ['test', '📝 Test']];
+const done = store.get('done', {});
+function markDone(k) { done[k] = true; store.set('done', done); renderNav(); }
+function renderNav() {
+  const nav = $('#nav'); nav.innerHTML = '';
+  const cur = (location.hash || '#lernen').slice(1);
+  TABS.forEach(([k, label]) => {
+    const b = el('button', (k === cur ? 'active ' : '') + (done[k] ? 'done' : ''), label);
+    b.onclick = () => go(k); nav.appendChild(b);
+  });
+}
+function go(k) { location.hash = k; }
+function show() {
+  const cur = (location.hash || '#lernen').slice(1);
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('active', s.id === 's-' + cur));
+  renderNav(); window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', show);
+document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go); });
+
+/* ---------- Übung 1: Zuordnen ---------- */
+const PAIRS = [
+  ['Rote Blutkörperchen', 'Transportieren Sauerstoff'],
+  ['Weisse Blutkörperchen', 'Wehren Krankheitserreger ab'],
+  ['Blutplättchen', 'Verschliessen Wunden (Gerinnung)'],
+  ['Blutplasma', 'Flüssiger Teil, transportiert Nährstoffe']
+];
+function initMatch() {
+  const grid = $('#m-grid'); grid.innerHTML = ''; $('#m-fb').className = 'fb';
+  let sel = null, found = 0, errors = 0;
+  const L = el('div'), R = el('div');
+  L.style.cssText = R.style.cssText = 'display:grid;gap:10px';
+  PAIRS.forEach((p, i) => { const c = el('button', 'chip', p[0]); c.dataset.i = i; c.dataset.side = 'l'; L.appendChild(c); });
+  shuffle(PAIRS.map((p, i) => i)).forEach(i => { const c = el('button', 'chip', PAIRS[i][1]); c.dataset.i = i; c.dataset.side = 'r'; R.appendChild(c); });
+  grid.append(L, R);
+  grid.onclick = e => {
+    const c = e.target.closest('.chip'); if (!c || c.classList.contains('ok')) return;
+    if (c.dataset.side === 'l') { grid.querySelectorAll('.chip.sel').forEach(x => x.classList.remove('sel')); sel = c; c.classList.add('sel'); return; }
+    if (!sel) { fb('#m-fb', false, 'Wähle zuerst links einen Bestandteil.'); return; }
+    if (sel.dataset.i === c.dataset.i) {
+      sel.classList.replace('sel', 'ok'); c.classList.add('ok'); sel = null; found++;
+      if (found === PAIRS.length) { fb('#m-fb', true, `Super! Alles richtig zugeordnet (${errors} Fehlversuch${errors === 1 ? '' : 'e'}).`); markDone('u1'); }
+      else $('#m-fb').className = 'fb';
+    } else {
+      errors++; c.classList.add('shake'); setTimeout(() => c.classList.remove('shake'), 400);
+      fb('#m-fb', false, 'Das passt nicht – versuch es nochmals.');
+    }
+  };
+}
+$('#m-reset').onclick = initMatch;
+
+/* ---------- Übung 2: Lückentext ---------- */
+const GAPS = [
+  { t: 'Das Herz ist ein kräftiger {0}, der Blut durch den Körper pumpt.', o: [['Muskel', 'Knochen', 'Nerv'], 0] },
+  { t: 'Gefässe, die Blut vom Herz weg führen, heissen {0}.', o: [['Venen', 'Arterien', 'Kapillaren'], 1] },
+  { t: 'Zum Herz hin führen die {0}.', o: [['Venen', 'Arterien', 'Kapillaren'], 0] },
+  { t: 'In der Lunge nimmt das Blut {0} auf und gibt {1} ab.', o: [['Sauerstoff', 'Kohlenstoffdioxid', 'Zucker'], 0], o2: [['Sauerstoff', 'Kohlenstoffdioxid', 'Zucker'], 1] },
+  { t: 'Der Austausch von Stoffen zwischen Blut und Organen findet in den {0} statt.', o: [['Kapillaren', 'Herzklappen', 'Vorhöfen'], 0] },
+  { t: 'Bei Sport schlägt das Herz {0}, weil die Muskeln mehr Sauerstoff brauchen.', o: [['langsamer', 'schneller', 'gar nicht'], 1] }
+];
+function initGaps() {
+  const box = $('#g-text'); box.innerHTML = ''; $('#g-fb').className = 'fb';
+  GAPS.forEach(g => {
+    const p = el('p'); const parts = g.t.split(/\{(\d)\}/);
+    parts.forEach((part, i) => {
+      if (i % 2 === 0) p.appendChild(document.createTextNode(part));
+      else {
+        const spec = part === '0' ? g.o : g.o2; const s = el('select');
+        s.add(new Option('— wählen —', '')); spec[0].forEach((o, k) => s.add(new Option(o, k)));
+        s.dataset.ok = spec[1]; p.appendChild(s);
+      }
+    });
+    box.appendChild(p);
+  });
+}
+$('#g-check').onclick = () => {
+  const sels = [...document.querySelectorAll('#g-text select')]; let ok = 0;
+  sels.forEach(s => { const r = s.value === s.dataset.ok; s.className = r ? 'ok' : 'bad'; if (r) ok++; });
+  const all = ok === sels.length;
+  fb('#g-fb', all, all ? 'Perfekt, alle Lücken stimmen!' : `${ok} von ${sels.length} richtig. Korrigiere die roten Lücken.`);
+  if (all) markDone('u2');
+};
+$('#g-reset').onclick = initGaps;
+
+/* ---------- Übung 3: Reihenfolge ---------- */
+const ORDER = ['Körper (Organe)', 'Rechter Vorhof', 'Rechte Herzkammer', 'Lunge', 'Linker Vorhof', 'Linke Herzkammer'];
+function initOrder() {
+  const slots = $('#o-slots'), pool = $('#o-pool'); slots.innerHTML = pool.innerHTML = ''; $('#o-fb').className = 'fb';
+  let step = 1;
+  ORDER.forEach((_, i) => slots.appendChild(el('div', 'slot', `Station ${i + 1}`)));
+  const first = slots.children[0]; first.textContent = '1. ' + ORDER[0]; first.classList.add('filled');
+  shuffle(ORDER.slice(1)).forEach(name => {
+    const b = el('button', 'chip', name);
+    b.onclick = () => {
+      if (name === ORDER[step]) {
+        const s = slots.children[step]; s.textContent = `${step + 1}. ${name}`; s.classList.add('filled'); b.remove(); step++;
+        if (step === ORDER.length) { fb('#o-fb', true, 'Richtig! Von der linken Herzkammer geht es über die Aorta zurück in den Körper – der Kreislauf schliesst sich.'); markDone('u3'); }
+        else $('#o-fb').className = 'fb';
+      } else {
+        b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 400);
+        fb('#o-fb', false, 'Nicht ganz. Tipp: Sauerstoffarmes Blut kommt zuerst ins rechte Herz.');
+      }
+    };
+    pool.appendChild(b);
+  });
+}
+$('#o-reset').onclick = initOrder;
+
+/* ---------- Übung 4: Herz beschriften ---------- */
+const HEART = ['Rechter Vorhof', 'Rechte Herzkammer', 'Linker Vorhof', 'Linke Herzkammer'];
+function initHeart() {
+  const box = $('#h-labels'); box.innerHTML = ''; $('#h-fb').className = 'fb';
+  HEART.forEach((name, i) => {
+    const d = el('div'); d.appendChild(el('span', 'num', i + 1));
+    const s = el('select'); s.add(new Option('— wählen —', ''));
+    shuffle(HEART).forEach(n => s.add(new Option(n, n))); s.dataset.ok = name; d.appendChild(s); box.appendChild(d);
+  });
+}
+$('#h-check').onclick = () => {
+  const sels = [...document.querySelectorAll('#h-labels select')]; let ok = 0;
+  sels.forEach(s => { const r = s.value === s.dataset.ok; s.className = r ? 'ok' : 'bad'; if (r) ok++; });
+  fb('#h-fb', ok === 4, ok === 4 ? 'Genau! Das rechte Herz (blau) pumpt zur Lunge, das linke (rot) in den Körper.' : `${ok} von 4 richtig. Denk daran: Links im Bild ist die rechte Herzseite.`);
+  if (ok === 4) markDone('u4');
+};
+$('#h-reset').onclick = initHeart;
+
+/* ---------- Übung 5: Mythen ---------- */
+const MYTHS = [
+  ['Arterien enthalten immer sauerstoffreiches Blut.', false, 'Die Lungenarterie führt sauerstoffarmes Blut zur Lunge. Arterien führen vom Herz weg – egal, was sie transportieren.'],
+  ['Das Herz ist ein Muskel.', true, 'Ja, ein Hohlmuskel, der nie Pause macht.'],
+  ['Das Blut in den Venen ist blau.', false, 'Es ist dunkelrot. Venen sehen unter der Haut nur bläulich aus.'],
+  ['Bei Anstrengung schlägt das Herz schneller.', true, 'Die Muskeln brauchen mehr Sauerstoff, also muss mehr Blut pro Minute fliessen.'],
+  ['Das Herz liegt ganz links im Brustkorb.', false, 'Es liegt ziemlich in der Mitte, nur die Spitze zeigt etwas nach links.'],
+  ['Herzklappen sorgen dafür, dass das Blut nur in eine Richtung fliesst.', true, 'Wie Ventile: Sie öffnen sich nur in eine Richtung.']
+];
+function initMyths() {
+  let i = 0, score = 0; const card = $('#t-card');
+  const render = () => {
+    if (i >= MYTHS.length) {
+      card.innerHTML = `<div class="score">${score} / ${MYTHS.length}</div><p>${score >= 5 ? 'Mythenjäger:in! 🏆' : 'Schau dir die Karten bei «Lernen» nochmals an und versuche es erneut.'}</p>`;
+      markDone('u5'); return;
+    }
+    const m = MYTHS[i];
+    card.innerHTML = `<div class="progress"><i style="width:${i / MYTHS.length * 100}%"></i></div><div class="bigq">${m[0]}</div>
+      <div class="row"><button class="btn" data-a="1">✅ Stimmt</button><button class="btn sec" data-a="0">❌ Stimmt nicht</button></div><div class="fb" id="t-fb"></div>`;
+    card.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
+      const ok = (b.dataset.a === '1') === m[1]; if (ok) score++;
+      card.querySelectorAll('[data-a]').forEach(x => x.disabled = true);
+      fb('#t-fb', ok, (ok ? 'Richtig! ' : 'Leider falsch. ') + m[2]);
+      const n = el('button', 'btn', i + 1 < MYTHS.length ? 'Nächste Karte →' : 'Ergebnis'); n.style.marginTop = '12px';
+      n.onclick = () => { i++; render(); }; card.appendChild(n);
+    });
+  };
+  render();
+}
+$('#t-reset').onclick = initMyths;
+
+/* ---------- Test ---------- */
+const QUIZ = [
+  { q: 'Welche Blutzellen transportieren Sauerstoff?', a: ['Rote Blutkörperchen', 'Weisse Blutkörperchen', 'Blutplättchen'], c: 0, ex: 'Übung 1' },
+  { q: 'Welche Blutzellen helfen bei der Wundheilung (Gerinnung)?', a: ['Rote Blutkörperchen', 'Blutplättchen', 'Blutplasma'], c: 1, ex: 'Übung 1' },
+  { q: 'Gefässe, die Blut vom Herz wegführen, heissen …', a: ['Venen', 'Arterien', 'Kapillaren'], c: 1, ex: 'Übung 2' },
+  { q: 'Wo findet der Austausch von Sauerstoff und CO₂ mit den Organen statt?', a: ['In den Herzklappen', 'In den Kapillaren', 'In den Vorhöfen'], c: 1, ex: 'Übung 2' },
+  { q: 'Was kommt nach dem rechten Vorhof?', a: ['Die rechte Herzkammer', 'Die Lunge', 'Der linke Vorhof'], c: 0, ex: 'Übung 3' },
+  { q: 'Wohin pumpt die rechte Herzkammer das Blut?', a: ['In den Körper', 'In die Lunge', 'In den linken Vorhof direkt'], c: 1, ex: 'Übung 3' },
+  { q: 'Du schaust ein Herzbild von vorne an. Welche Seite siehst du links im Bild?', a: ['Die rechte Herzseite', 'Die linke Herzseite', 'Das hängt vom Bild ab'], c: 0, ex: 'Übung 4' },
+  { q: 'Welche Aussage stimmt?', a: ['Das Blut in den Venen ist blau.', 'Das Herz ist ein Muskel.', 'Arterien enthalten immer sauerstoffreiches Blut.'], c: 1, ex: 'Übung 5' }
+];
+let quiz = store.get('quiz', { i: 0, ans: [], name: '', finished: false });
+function renderQuiz() {
+  const card = $('#q-card');
+  if (quiz.finished) return renderResult(card);
+  if (quiz.i === 0 && quiz.ans.length === 0) {
+    card.innerHTML = `<p>${QUIZ.length} Fragen zu den Übungen. Du siehst die Auflösung erst am Schluss.</p>
+      <p><label>Dein Name (freiwillig):<br><input type="text" id="q-name" value="${quiz.name || ''}" maxlength="40"></label></p>
+      <button class="btn" id="q-start">Test starten</button>`;
+    $('#q-start').onclick = () => { quiz.name = $('#q-name').value.trim(); quiz.started = true; quiz.i = 0; saveQuiz(); renderQ(); };
+    return;
+  }
+  renderQ();
+}
+function renderQ() {
+  const card = $('#q-card'), q = QUIZ[quiz.i];
+  card.innerHTML = `<div class="progress"><i style="width:${quiz.i / QUIZ.length * 100}%"></i></div>
+    <div class="small">Frage ${quiz.i + 1} von ${QUIZ.length}</div><div class="bigq">${q.q}</div><div class="answers"></div>`;
+  q.a.forEach((txt, k) => {
+    const b = el('button', 'chip', txt);
+    b.onclick = () => {
+      quiz.ans[quiz.i] = k; quiz.i++;
+      if (quiz.i >= QUIZ.length) { quiz.finished = true; markDone('test'); }
+      saveQuiz(); renderQuiz();
+    };
+    $('.answers', card).appendChild(b);
+  });
+}
+function saveQuiz() { store.set('quiz', quiz); }
+function scoreOf() { return quiz.ans.filter((a, i) => a === QUIZ[i].c).length; }
+function renderResult(card) {
+  const s = scoreOf();
+  card.innerHTML = `<div class="score">${s} / ${QUIZ.length}</div><p>${quiz.name ? quiz.name + ', ' : ''}${s === QUIZ.length ? 'perfekt! 🎉' : s >= 6 ? 'sehr gut gemacht!' : s >= 4 ? 'gut, aber da geht noch mehr.' : 'übe die Aufgaben nochmals.'}</p>
+    <ul class="review">${QUIZ.map((q, i) => { const ok = quiz.ans[i] === q.c; return `<li class="${ok ? 'r' : 'w'}">${ok ? '✔' : '✘'} ${q.q}${ok ? '' : `<br><span class="small">Richtig wäre: ${q.a[q.c]} (siehe ${q.ex})</span>`}</li>`; }).join('')}</ul>
+    <div class="row"><button class="btn" id="q-dl">⬇ Ergebnis als Textdatei</button><button class="btn sec" id="q-redo">Test wiederholen</button></div>`;
+  $('#q-dl').onclick = downloadResult;
+  $('#q-redo').onclick = () => { quiz = { i: 0, ans: [], name: quiz.name, finished: false }; saveQuiz(); renderQuiz(); };
+}
+function downloadResult() {
+  const d = new Date().toLocaleString('de-CH');
+  const lines = [`Test Blutkreislauf – ${quiz.name || 'ohne Namen'}`, `Datum: ${d}`, `Ergebnis: ${scoreOf()} von ${QUIZ.length}`, ''];
+  QUIZ.forEach((q, i) => {
+    const ok = quiz.ans[i] === q.c;
+    lines.push(`${i + 1}. ${q.q}`, `   Deine Antwort: ${q.a[quiz.ans[i]]} ${ok ? '(richtig)' : '(falsch, richtig: ' + q.a[q.c] + ')'}`);
+  });
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/plain;charset=utf-8' });
+  const a = el('a'); a.href = URL.createObjectURL(blob); a.download = 'test-blutkreislauf.txt'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ---------- Start ---------- */
+initMatch(); initGaps(); initOrder(); initHeart(); initMyths(); renderQuiz(); show();
+</script>
+</body>
+</html>
