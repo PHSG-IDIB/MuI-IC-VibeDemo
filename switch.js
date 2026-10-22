@@ -9,7 +9,7 @@
       r: '5 Übungen (Zuordnen, Lückentext, Reihenfolge, Herz beschriften, Mythen), 6 Wissenskarten, Test mit 8 Fragen und Download.'
     },
     {
-      n: 'Version 2', t: '≈ 25 Minuten (18:15 – 18:40)', f: '1 Datei, ca. 1200 Zeilen', cur: !isV1,
+      n: 'Version 2', t: '≈ 16 Minuten (18:14 – 18:30)', f: '1 Datei, ca. 1200 Zeilen', cur: !isV1,
       p: ['«Deutlich mehr und tiefer Inhalt – eine WTF-Seite, man soll kaum glauben, dass das kurz erstellt wurde»', '«Besonders mehr grafische Übungen»', '«Wissen aus Lerntheorien einbauen, damit wir wirklich qualitativ hochwertiges Lernen haben»', '«Ein Schalter, um zwischen Version 1 und 2 umzustellen – mit Anzeige der Bauzeit und der Kernelemente des Prompts»'],
       r: '8 Kapitel, animierter Doppelkreislauf, Puls-Labor, 12 Übungen (davon 3 grafisch neu: Hotspots, Gefässe färben, Blut-Diagramm), Leitner-Lernkarten, Glossar, Test mit 19 Fragen und Konfidenz-Kalibrierung, Vorwissens-Check, Selbsterklärungen, Spacing-Empfehlung, Didaktik-Seite, Dark Mode.'
     }
